@@ -7,6 +7,14 @@
 <a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
 </p>
 
+
+## Mobile App-Style Navigation
+
+This application features a mobile-responsive layout with:
+- Fixed bottom navigation bar on phone screens
+- Floating center action button for "Post Live Update" (employer/admin roles)
+- Extra bottom margin to ensure content is not covered by navigation
+
 ## About Laravel
 
 Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
