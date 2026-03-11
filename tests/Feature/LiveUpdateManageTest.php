@@ -1,0 +1,96 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\Announcement;
+use App\Models\AnnouncementTarget;
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+
+class LiveUpdateManageTest extends TestCase
+{
+    use RefreshDatabase;
+
+    public function test_author_can_edit_live_update(): void
+    {
+        $employer = User::factory()->create([
+            'role' => 'employer',
+        ]);
+
+        $announcement = Announcement::create([
+            'author_id' => $employer->id,
+            'title' => 'Original title',
+            'body' => 'Original body',
+        ]);
+
+        AnnouncementTarget::create([
+            'announcement_id' => $announcement->id,
+            'target_type' => 'all',
+            'target_id' => null,
+        ]);
+
+        $response = $this->actingAs($employer)->put(route('announcements.update', $announcement), [
+            'title' => 'Updated title',
+            'body' => 'Updated body',
+            'target_type' => 'all',
+        ]);
+
+        $response->assertRedirect(route('announcements.index'));
+
+        $this->assertDatabaseHas('announcements', [
+            'id' => $announcement->id,
+            'title' => 'Updated title',
+            'body' => 'Updated body',
+        ]);
+    }
+
+    public function test_author_can_delete_live_update(): void
+    {
+        $employer = User::factory()->create([
+            'role' => 'employer',
+        ]);
+
+        $announcement = Announcement::create([
+            'author_id' => $employer->id,
+            'title' => 'To remove',
+            'body' => 'Will be deleted',
+        ]);
+
+        $response = $this->actingAs($employer)->delete(route('announcements.destroy', $announcement));
+
+        $response->assertRedirect(route('announcements.index'));
+
+        $this->assertDatabaseMissing('announcements', [
+            'id' => $announcement->id,
+        ]);
+    }
+
+    public function test_employee_cannot_edit_or_delete_live_update(): void
+    {
+        $employer = User::factory()->create([
+            'role' => 'employer',
+        ]);
+
+        $employee = User::factory()->create([
+            'role' => 'employee',
+        ]);
+
+        $announcement = Announcement::create([
+            'author_id' => $employer->id,
+            'title' => 'Protected live update',
+            'body' => 'Not editable by employee',
+        ]);
+
+        $editResponse = $this->actingAs($employee)->put(route('announcements.update', $announcement), [
+            'title' => 'Hack',
+            'body' => 'Hack',
+            'target_type' => 'all',
+        ]);
+
+        $deleteResponse = $this->actingAs($employee)->delete(route('announcements.destroy', $announcement));
+
+        $editResponse->assertForbidden();
+        $deleteResponse->assertForbidden();
+    }
+}

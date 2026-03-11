@@ -1,0 +1,19 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+	body {
+		font-family: 'Roboto', ui-sans-serif, system-ui, sans-serif;
+	}
+}
+
+@layer components {
+	.md-card {
+		@apply bg-white rounded-2xl shadow-md ring-1 ring-slate-200;
+	}
+
+	.md-card-body {
+		@apply p-5 sm:p-6;
+	}
+}
