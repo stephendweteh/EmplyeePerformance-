@@ -48,7 +48,7 @@ class EmployeeUpdateNotificationTest extends TestCase
             [$employer, $admin, $superAdmin],
             EmployeeUpdateSubmittedNotification::class,
             function (EmployeeUpdateSubmittedNotification $notification) use ($update) {
-                $payload = $notification->toArray(new User());
+                $payload = $notification->toArray(new User);
 
                 return $payload['employee_update_id'] === $update->id;
             }

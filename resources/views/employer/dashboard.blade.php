@@ -33,7 +33,7 @@
         <h2 class="font-semibold text-xl text-slate-800 leading-tight">Employer Dashboard</h2>
     </x-slot>
 
-    <div class="py-8">
+    <div class="py-8" x-data="{ selectedImage: null, selectedImageName: '' }">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
             <div class="md-card">
                 <div class="md-card-body">
@@ -78,9 +78,23 @@
                                     <p class="text-slate-700 whitespace-pre-wrap">{{ $update->wins }}</p>
                                     @if ($update->attachments->isNotEmpty())
                                         <p class="mt-3 font-medium text-slate-700">Attachments</p>
-                                        <div class="mt-1 flex flex-wrap gap-2">
-                                            @foreach ($update->attachments as $attachment)
-                                                <a href="{{ $attachment->fileUrl() }}" target="_blank" class="text-xs px-2 py-1 rounded-full bg-sky-100 text-sky-700 hover:bg-sky-200">
+                                        @php($empImages = $update->attachments->filter(fn ($a) => $a->mime_type && str_starts_with($a->mime_type, 'image/')))
+                                        @if ($empImages->isNotEmpty())
+                                            <div class="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3 max-w-xl">
+                                                @foreach ($empImages as $attachment)
+                                                    <button
+                                                        type="button"
+                                                        class="relative aspect-[4/3] w-full overflow-hidden rounded-lg border border-slate-200 bg-slate-100 hover:border-sky-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 transition"
+                                                        x-on:click="selectedImage = @js($attachment->fileUrl()); selectedImageName = @js($attachment->file_name)"
+                                                    >
+                                                        <img src="{{ $attachment->fileUrl() }}" alt="{{ $attachment->file_name }}" class="absolute inset-0 h-full w-full object-cover" loading="lazy" decoding="async">
+                                                    </button>
+                                                @endforeach
+                                            </div>
+                                        @endif
+                                        <div class="mt-2 flex flex-wrap gap-2">
+                                            @foreach ($update->attachments->reject(fn ($a) => $a->mime_type && str_starts_with($a->mime_type, 'image/')) as $attachment)
+                                                <a href="{{ $attachment->fileUrl() }}" target="_blank" rel="noopener noreferrer" class="text-xs px-2 py-1 rounded-full bg-sky-100 text-sky-700 hover:bg-sky-200">
                                                     {{ $attachment->file_name }}
                                                 </a>
                                             @endforeach
@@ -132,6 +146,16 @@
                         <div class="md-card-body text-slate-500">No employee updates found for this filter.</div>
                     </div>
                 @endforelse
+            </div>
+        </div>
+
+        <div x-show="selectedImage" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4" x-on:click.self="selectedImage = null">
+            <div class="max-w-5xl w-full">
+                <div class="flex justify-between items-center mb-3">
+                    <p class="text-white text-sm" x-text="selectedImageName"></p>
+                    <button type="button" class="text-white/90 hover:text-white text-sm" x-on:click="selectedImage = null">Close</button>
+                </div>
+                <img :src="selectedImage" :alt="selectedImageName" class="mx-auto max-h-[min(85vh,900px)] max-w-full rounded-lg bg-black/20 object-contain shadow-lg">
             </div>
         </div>
     </div>

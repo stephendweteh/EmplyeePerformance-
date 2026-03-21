@@ -12,9 +12,7 @@ class EmployeeUpdateSubmittedNotification extends Notification
 {
     use Queueable;
 
-    public function __construct(private readonly EmployeeUpdate $update)
-    {
-    }
+    public function __construct(private readonly EmployeeUpdate $update) {}
 
     /**
      * Get the notification's delivery channels.

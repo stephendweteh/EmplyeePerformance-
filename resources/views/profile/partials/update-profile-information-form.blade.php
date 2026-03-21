@@ -20,11 +20,13 @@
         <div>
             <x-input-label for="profile_photo" :value="__('Profile Picture')" />
 
-            @if ($user->profile_photo_path)
+            @if ($user->profilePhotoUrl())
                 <img
-                    src="{{ asset('storage/'.$user->profile_photo_path) }}"
+                    src="{{ $user->profilePhotoUrl() }}"
                     alt="{{ __('Current profile picture') }}"
                     class="mt-2 h-20 w-20 rounded-full object-cover border border-gray-200"
+                    loading="lazy"
+                    decoding="async"
                 >
             @endif
 

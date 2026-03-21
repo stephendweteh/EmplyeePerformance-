@@ -2,10 +2,10 @@
 
 namespace App\Models;
 
+use App\Support\PublicStorage;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Support\Facades\Storage;
 
 class EmployeeUpdateAttachment extends Model
 {
@@ -26,6 +26,6 @@ class EmployeeUpdateAttachment extends Model
 
     public function fileUrl(): string
     {
-        return Storage::url($this->file_path);
+        return PublicStorage::url($this->file_path);
     }
 }

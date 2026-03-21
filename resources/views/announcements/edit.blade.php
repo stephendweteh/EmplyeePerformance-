@@ -13,7 +13,7 @@
                         </div>
                     @endif
 
-                    <form method="POST" action="{{ route('announcements.update', $announcement) }}" class="space-y-4" x-data="{ type: '{{ old('target_type', $targetType) }}' }">
+                    <form method="POST" action="{{ route('announcements.update', $announcement) }}" class="space-y-4" enctype="multipart/form-data" x-data="{ type: '{{ old('target_type', $targetType) }}' }">
                         @csrf
                         @method('PUT')
 
@@ -59,6 +59,54 @@
                                 value="{{ old('publish_at', optional($announcement->publish_at)->format('Y-m-d\TH:i')) }}"
                                 class="mt-1 w-full rounded-lg border-slate-300"
                             >
+                        </div>
+
+                        <div class="rounded-xl border border-slate-200 bg-slate-50/80 p-4 space-y-3">
+                            <p class="text-sm font-medium text-slate-800">Files &amp; images</p>
+                            <p class="text-xs text-slate-500">Remove existing files with the checkboxes, or add new ones below. Picture adverts are shown as images; other types appear as download links on the live update.</p>
+
+                            @if ($announcement->attachments->isNotEmpty())
+                                <div class="space-y-3">
+                                    @foreach ($announcement->attachments->sortBy('id') as $attachment)
+                                        @php($isImage = $attachment->mime_type && str_starts_with($attachment->mime_type, 'image/'))
+                                        <div class="flex flex-wrap items-start gap-3 rounded-lg border border-slate-200 bg-white p-3">
+                                            @if ($isImage)
+                                                <a href="{{ $attachment->fileUrl() }}" target="_blank" rel="noopener noreferrer" class="shrink-0">
+                                                    <img src="{{ $attachment->fileUrl() }}" alt="" class="h-20 w-28 rounded-md object-cover border border-slate-200">
+                                                </a>
+                                            @else
+                                                <div class="flex h-20 w-28 shrink-0 items-center justify-center rounded-md border border-dashed border-slate-300 bg-slate-50 text-xs text-slate-500 px-1 text-center">
+                                                    {{ strtoupper(pathinfo($attachment->file_name, PATHINFO_EXTENSION) ?: 'file') }}
+                                                </div>
+                                            @endif
+                                            <div class="min-w-0 flex-1">
+                                                <p class="text-sm font-medium text-slate-800 truncate">{{ $attachment->file_name }}</p>
+                                                <p class="text-xs text-slate-500">{{ $attachment->mime_type ?? 'unknown type' }}</p>
+                                                <a href="{{ $attachment->fileUrl() }}" target="_blank" rel="noopener noreferrer" class="mt-1 inline-block text-xs text-sky-700 hover:underline">Open</a>
+                                            </div>
+                                            <label class="flex items-center gap-2 text-sm text-rose-700 cursor-pointer shrink-0">
+                                                <input type="checkbox" name="remove_attachment_ids[]" value="{{ $attachment->id }}" class="rounded border-slate-300 text-rose-600 focus:ring-rose-500">
+                                                <span>Remove</span>
+                                            </label>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            @else
+                                <p class="text-sm text-slate-500">No files on this live update yet.</p>
+                            @endif
+
+                            <div class="border-t border-slate-200 pt-3 space-y-3">
+                                <div>
+                                    <label class="text-sm text-slate-700">Add attachments (optional, up to 5 per save)</label>
+                                    <input type="file" name="attachments[]" class="mt-1 w-full rounded-lg border-slate-300 bg-white" multiple>
+                                    <p class="text-xs text-slate-500 mt-1">PDF, DOC, DOCX, PNG, JPG, WEBP, TXT, CSV — max 10MB each.</p>
+                                </div>
+                                <div>
+                                    <label class="text-sm text-slate-700">Add picture adverts (optional)</label>
+                                    <input type="file" name="picture_adverts[]" class="mt-1 w-full rounded-lg border-slate-300 bg-white" multiple accept="image/png,image/jpeg,image/webp,image/gif">
+                                    <p class="text-xs text-slate-500 mt-1">PNG, JPG, JPEG, WEBP, GIF — max 10MB each.</p>
+                                </div>
+                            </div>
                         </div>
 
                         <div class="flex items-center gap-3">

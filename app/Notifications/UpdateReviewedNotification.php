@@ -12,9 +12,7 @@ class UpdateReviewedNotification extends Notification
 {
     use Queueable;
 
-    public function __construct(private readonly UpdateReview $review)
-    {
-    }
+    public function __construct(private readonly UpdateReview $review) {}
 
     /**
      * Get the notification's delivery channels.

@@ -6,7 +6,9 @@ use App\Mail\SmtpTestMail;
 use App\Models\AppSetting;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class AdminSettingsTest extends TestCase
@@ -22,7 +24,22 @@ class AdminSettingsTest extends TestCase
         $response = $this->actingAs($superAdmin)->get(route('admin.settings.edit'));
 
         $response->assertOk();
+        $response->assertSee('Site logo');
         $response->assertSee('SMTP Settings');
+    }
+
+    public function test_settings_page_loads_when_smtp_password_was_encrypted_with_different_app_key(): void
+    {
+        $superAdmin = User::factory()->create([
+            'role' => 'super_admin',
+        ]);
+
+        AppSetting::setValue('smtp_password', 'eyJpdiI6IkZha2UiLCJ2YWx1ZSI6IkZha2UiLCJtYWMiOiJmYWtlbWFjIiwidGFnIjoiIn0=');
+
+        $response = $this->actingAs($superAdmin)->get(route('admin.settings.edit'));
+
+        $response->assertOk();
+        $this->assertNull(AppSetting::smtpConfig()['password']);
     }
 
     public function test_super_admin_can_save_smtp_settings(): void
@@ -63,6 +80,81 @@ class AdminSettingsTest extends TestCase
         $this->assertSame('Employee update from :employee_name', AppSetting::getValue('email_alert_employee_update_submitted_subject'));
         $this->assertSame('Status :status, rating :rating', AppSetting::getValue('email_alert_update_reviewed_body'));
         $this->assertSame('Open Live Updates', AppSetting::getValue('email_alert_live_update_action'));
+    }
+
+    public function test_super_admin_can_upload_site_logo(): void
+    {
+        Storage::fake('public');
+
+        $superAdmin = User::factory()->create([
+            'role' => 'super_admin',
+        ]);
+
+        $logo = UploadedFile::fake()->image('brand.png', 200, 60);
+
+        $response = $this->actingAs($superAdmin)->put(route('admin.settings.update'), [
+            'site_logo' => $logo,
+            'smtp_host' => 'smtp.example.com',
+            'smtp_port' => 587,
+            'smtp_encryption' => 'tls',
+            'smtp_username' => 'smtp-user',
+            'smtp_password' => 'secret-pass',
+            'smtp_from_address' => 'noreply@example.com',
+            'smtp_from_name' => 'DaddyAsh',
+            'email_alert_employee_update_submitted_subject' => 'Employee update from :employee_name',
+            'email_alert_employee_update_submitted_body' => ':employee_name posted on :date',
+            'email_alert_employee_update_submitted_action' => 'Open Employer Dashboard',
+            'email_alert_update_reviewed_subject' => 'Review posted',
+            'email_alert_update_reviewed_body' => 'Status :status, rating :rating',
+            'email_alert_update_reviewed_action' => 'Open Employee Dashboard',
+            'email_alert_live_update_subject' => 'Live item: :title',
+            'email_alert_live_update_body' => 'Please read: :title',
+            'email_alert_live_update_action' => 'Open Live Updates',
+        ]);
+
+        $response->assertSessionHasNoErrors();
+
+        $storedPath = AppSetting::getValue('site_logo_path');
+        $this->assertNotNull($storedPath);
+        Storage::disk('public')->assertExists($storedPath);
+        $this->assertNotNull(AppSetting::siteLogoUrl());
+    }
+
+    public function test_super_admin_can_remove_site_logo(): void
+    {
+        Storage::fake('public');
+
+        $superAdmin = User::factory()->create([
+            'role' => 'super_admin',
+        ]);
+
+        AppSetting::setValue('site_logo_path', 'site-logos/old.png');
+        Storage::disk('public')->put('site-logos/old.png', 'fake');
+
+        $response = $this->actingAs($superAdmin)->put(route('admin.settings.update'), [
+            'remove_site_logo' => '1',
+            'smtp_host' => 'smtp.example.com',
+            'smtp_port' => 587,
+            'smtp_encryption' => 'tls',
+            'smtp_username' => 'smtp-user',
+            'smtp_password' => 'secret-pass',
+            'smtp_from_address' => 'noreply@example.com',
+            'smtp_from_name' => 'DaddyAsh',
+            'email_alert_employee_update_submitted_subject' => 'Employee update from :employee_name',
+            'email_alert_employee_update_submitted_body' => ':employee_name posted on :date',
+            'email_alert_employee_update_submitted_action' => 'Open Employer Dashboard',
+            'email_alert_update_reviewed_subject' => 'Review posted',
+            'email_alert_update_reviewed_body' => 'Status :status, rating :rating',
+            'email_alert_update_reviewed_action' => 'Open Employee Dashboard',
+            'email_alert_live_update_subject' => 'Live item: :title',
+            'email_alert_live_update_body' => 'Please read: :title',
+            'email_alert_live_update_action' => 'Open Live Updates',
+        ]);
+
+        $response->assertSessionHasNoErrors();
+        $this->assertSame('', AppSetting::getValue('site_logo_path'));
+        Storage::disk('public')->assertMissing('site-logos/old.png');
+        $this->assertNull(AppSetting::siteLogoUrl());
     }
 
     public function test_super_admin_can_send_test_email(): void

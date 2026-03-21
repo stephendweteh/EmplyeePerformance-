@@ -1,8 +1,8 @@
 <?php
 
-use App\Http\Controllers\AnnouncementController;
-use App\Http\Controllers\AdminSettingsController;
 use App\Http\Controllers\ActivityLogController;
+use App\Http\Controllers\AdminSettingsController;
+use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\EmployeeDashboardController;
 use App\Http\Controllers\EmployeeProfileController;
 use App\Http\Controllers\EmployeeUpdateController;

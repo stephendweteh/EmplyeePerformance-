@@ -13,6 +13,12 @@
                 <div class="rounded-lg bg-rose-100 px-4 py-3 text-sm text-rose-700">{{ $errors->first() }}</div>
             @endif
 
+            @if (! empty($smtpPasswordMissing))
+                <div class="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                    SMTP password is missing or invalid for this server. Enter the password below and click <strong>Save Settings</strong> before sending a test email.
+                </div>
+            @endif
+
             <div class="md-card">
                 <div class="md-card-body">
                     <h3 class="text-lg font-semibold text-slate-800">SMTP Settings</h3>
@@ -27,6 +33,7 @@
                         method="POST"
                         action="{{ route('admin.settings.update') }}"
                         class="mt-5 space-y-4"
+                        enctype="multipart/form-data"
                         x-data="{
                             employeeSubject: @js(old('email_alert_employee_update_submitted_subject', $emailAlerts['employee_update_submitted_subject'])),
                             employeeBody: @js(old('email_alert_employee_update_submitted_body', $emailAlerts['employee_update_submitted_body'])),
@@ -51,6 +58,24 @@
                     >
                         @csrf
                         @method('PUT')
+
+                        <div class="rounded-xl border border-slate-200 bg-slate-50/80 p-4 space-y-3">
+                            <h4 class="text-md font-semibold text-slate-800">Site logo</h4>
+                            <p class="text-sm text-slate-500">Shown in the navigation bar and on login/register pages. PNG, JPG, WEBP, or SVG — max 2MB. Leave upload empty to keep the current logo.</p>
+                            @if ($siteLogoUrl)
+                                <div class="flex flex-wrap items-center gap-4">
+                                    <img src="{{ $siteLogoUrl }}" alt="Current logo" class="max-h-[180px] max-w-[180px] object-contain rounded border border-slate-200 bg-white p-1">
+                                    <label class="inline-flex items-center gap-2 text-sm text-rose-700 cursor-pointer">
+                                        <input type="checkbox" name="remove_site_logo" value="1" class="rounded border-slate-300 text-rose-600 focus:ring-rose-500">
+                                        <span>Remove custom logo (use default)</span>
+                                    </label>
+                                </div>
+                            @endif
+                            <div>
+                                <label for="site_logo" class="block text-sm text-slate-700">{{ $siteLogoUrl ? 'Replace logo' : 'Upload logo' }}</label>
+                                <input id="site_logo" name="site_logo" type="file" accept=".png,.jpg,.jpeg,.webp,.svg,image/png,image/jpeg,image/webp,image/svg+xml" class="mt-1 w-full rounded-lg border-slate-300 bg-white text-sm">
+                            </div>
+                        </div>
 
                         <div class="grid md:grid-cols-2 gap-4">
                             <div>

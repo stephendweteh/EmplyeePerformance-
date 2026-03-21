@@ -3,10 +3,10 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
             <div class="flex">
-                <!-- Logo -->
+                <!-- Logo: compact in nav; full default is 180px (see application-logo) -->
                 <div class="shrink-0 flex items-center">
                     <a href="{{ route('dashboard') }}">
-                        <x-application-logo class="block w-[150px] h-auto" />
+                        <x-application-logo compact />
                     </a>
                 </div>
 
@@ -62,11 +62,13 @@
                 <x-dropdown align="right" width="48">
                     <x-slot name="trigger">
                         <button class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 bg-white hover:text-gray-700 focus:outline-none transition ease-in-out duration-150">
-                            @if (Auth::user()->profile_photo_path)
+                            @if (Auth::user()->profilePhotoUrl())
                                 <img
-                                    src="{{ asset('storage/'.Auth::user()->profile_photo_path) }}"
+                                    src="{{ Auth::user()->profilePhotoUrl() }}"
                                     alt="{{ __('Profile picture') }}"
-                                    class="h-8 w-8 rounded-full object-cover border border-gray-200 me-2"
+                                    class="h-8 w-8 shrink-0 rounded-full object-cover border border-gray-200 me-2"
+                                    loading="lazy"
+                                    decoding="async"
                                 >
                             @else
                                 <span class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-slate-200 text-xs font-semibold text-slate-700 me-2">
@@ -159,11 +161,13 @@
         <div class="pt-4 pb-1 border-t border-gray-200">
             <div class="px-4">
                 <div class="flex items-center gap-2">
-                    @if (Auth::user()->profile_photo_path)
+                    @if (Auth::user()->profilePhotoUrl())
                         <img
-                            src="{{ asset('storage/'.Auth::user()->profile_photo_path) }}"
+                            src="{{ Auth::user()->profilePhotoUrl() }}"
                             alt="{{ __('Profile picture') }}"
-                            class="h-8 w-8 rounded-full object-cover border border-gray-200"
+                            class="h-8 w-8 shrink-0 rounded-full object-cover border border-gray-200"
+                            loading="lazy"
+                            decoding="async"
                         >
                     @else
                         <span class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-slate-200 text-xs font-semibold text-slate-700">

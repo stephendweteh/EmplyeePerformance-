@@ -31,14 +31,36 @@ class AppServiceProvider extends ServiceProvider
                 return;
             }
 
+            $enc = strtolower(trim((string) ($smtp['encryption'] ?? '')));
+            $enc = $enc === '' ? 'none' : $enc;
+            $port = (int) ($smtp['port'] ?? 587);
+
+            // Symfony Mailer uses `scheme` (smtp vs smtps) and `auto_tls`, not Laravel's legacy `encryption` key.
+            if ($enc === 'none') {
+                $scheme = $port === 465 ? 'smtps' : 'smtp';
+                $autoTls = false;
+            } elseif ($enc === 'ssl') {
+                $scheme = 'smtps';
+                $autoTls = false;
+            } else {
+                $scheme = $port === 465 ? 'smtps' : 'smtp';
+                $autoTls = $scheme === 'smtp';
+            }
+
+            $base = config('mail.mailers.smtp', []);
+
             config([
                 'mail.default' => 'smtp',
-                'mail.mailers.smtp.transport' => 'smtp',
-                'mail.mailers.smtp.host' => $smtp['host'],
-                'mail.mailers.smtp.port' => (int) ($smtp['port'] ?? 587),
-                'mail.mailers.smtp.encryption' => $smtp['encryption'] ?: null,
-                'mail.mailers.smtp.username' => $smtp['username'] ?: null,
-                'mail.mailers.smtp.password' => $smtp['password'] ?: null,
+                'mail.mailers.smtp' => array_merge($base, [
+                    'transport' => 'smtp',
+                    'url' => null,
+                    'scheme' => $scheme,
+                    'host' => $smtp['host'],
+                    'port' => $port,
+                    'username' => $smtp['username'] ?: null,
+                    'password' => $smtp['password'] ?: null,
+                    'auto_tls' => $autoTls,
+                ]),
                 'mail.from.address' => $smtp['from_address'] ?: config('mail.from.address'),
                 'mail.from.name' => $smtp['from_name'] ?: config('mail.from.name'),
             ]);

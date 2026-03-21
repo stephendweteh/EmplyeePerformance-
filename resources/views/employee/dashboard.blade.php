@@ -45,14 +45,14 @@
                                         <p class="mt-2 text-slate-700 whitespace-pre-wrap">{{ $announcement->body }}</p>
                                         @php($imageAttachments = $announcement->attachments->filter(fn ($attachment) => $attachment->mime_type && str_starts_with($attachment->mime_type, 'image/')))
                                         @if ($imageAttachments->isNotEmpty())
-                                            <div class="mt-4 grid grid-cols-2 gap-3">
+                                            <div class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
                                                 @foreach ($imageAttachments as $attachment)
                                                     <button
                                                         type="button"
-                                                        class="rounded-lg overflow-hidden border border-slate-200 hover:border-sky-400 transition"
+                                                        class="relative aspect-[4/3] w-full overflow-hidden rounded-lg border border-slate-200 bg-slate-100 hover:border-sky-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 transition"
                                                         x-on:click="selectedImage = @js($attachment->fileUrl()); selectedImageName = @js($attachment->file_name)"
                                                     >
-                                                        <img src="{{ $attachment->fileUrl() }}" alt="{{ $attachment->file_name }}" class="h-28 w-full object-cover">
+                                                        <img src="{{ $attachment->fileUrl() }}" alt="{{ $attachment->file_name }}" class="absolute inset-0 h-full w-full object-cover" loading="lazy" decoding="async">
                                                     </button>
                                                 @endforeach
                                             </div>
@@ -133,9 +133,23 @@
                                     </div>
                                     <p class="mt-2 text-slate-700 whitespace-pre-wrap">{{ $update->wins }}</p>
                                     @if ($update->attachments->isNotEmpty())
-                                        <div class="mt-3 flex flex-wrap gap-2">
-                                            @foreach ($update->attachments as $attachment)
-                                                <a href="{{ $attachment->fileUrl() }}" target="_blank" class="text-xs px-2 py-1 rounded-full bg-sky-100 text-sky-700 hover:bg-sky-200">
+                                        @php($histImages = $update->attachments->filter(fn ($a) => $a->mime_type && str_starts_with($a->mime_type, 'image/')))
+                                        @if ($histImages->isNotEmpty())
+                                            <div class="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3 max-w-xl">
+                                                @foreach ($histImages as $attachment)
+                                                    <button
+                                                        type="button"
+                                                        class="relative aspect-[4/3] w-full overflow-hidden rounded-lg border border-slate-200 bg-slate-100 hover:border-sky-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 transition"
+                                                        x-on:click="selectedImage = @js($attachment->fileUrl()); selectedImageName = @js($attachment->file_name)"
+                                                    >
+                                                        <img src="{{ $attachment->fileUrl() }}" alt="{{ $attachment->file_name }}" class="absolute inset-0 h-full w-full object-cover" loading="lazy" decoding="async">
+                                                    </button>
+                                                @endforeach
+                                            </div>
+                                        @endif
+                                        <div class="mt-2 flex flex-wrap gap-2">
+                                            @foreach ($update->attachments->reject(fn ($a) => $a->mime_type && str_starts_with($a->mime_type, 'image/')) as $attachment)
+                                                <a href="{{ $attachment->fileUrl() }}" target="_blank" rel="noopener noreferrer" class="text-xs px-2 py-1 rounded-full bg-sky-100 text-sky-700 hover:bg-sky-200">
                                                     {{ $attachment->file_name }}
                                                 </a>
                                             @endforeach
@@ -168,7 +182,7 @@
                     <p class="text-white text-sm" x-text="selectedImageName"></p>
                     <button type="button" class="text-white/90 hover:text-white text-sm" x-on:click="selectedImage = null">Close</button>
                 </div>
-                <img :src="selectedImage" :alt="selectedImageName" class="max-h-[80vh] w-full object-contain rounded-lg bg-black/20">
+                <img :src="selectedImage" :alt="selectedImageName" class="mx-auto max-h-[min(85vh,900px)] max-w-full rounded-lg bg-black/20 object-contain shadow-lg">
             </div>
         </div>
     </div>

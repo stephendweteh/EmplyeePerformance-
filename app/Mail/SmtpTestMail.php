@@ -10,9 +10,7 @@ class SmtpTestMail extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public function __construct(private readonly string $appName)
-    {
-    }
+    public function __construct(private readonly string $appName) {}
 
     public function build(): self
     {

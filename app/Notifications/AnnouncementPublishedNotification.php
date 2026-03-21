@@ -2,8 +2,8 @@
 
 namespace App\Notifications;
 
-use App\Models\AppSetting;
 use App\Models\Announcement;
+use App\Models\AppSetting;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
@@ -12,9 +12,7 @@ class AnnouncementPublishedNotification extends Notification
 {
     use Queueable;
 
-    public function __construct(private readonly Announcement $announcement)
-    {
-    }
+    public function __construct(private readonly Announcement $announcement) {}
 
     /**
      * Get the notification's delivery channels.

@@ -10,8 +10,8 @@ use App\Models\Team;
 use App\Models\User;
 use App\Notifications\AnnouncementPublishedNotification;
 use App\Support\ActivityLogger;
-use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
@@ -166,7 +166,7 @@ class AnnouncementController extends Controller
     {
         $this->authorize('update', $announcement);
 
-        $announcement->load('targets');
+        $announcement->load(['targets', 'attachments']);
         $target = $announcement->targets->first();
 
         return view('announcements.edit', [
@@ -202,6 +202,15 @@ class AnnouncementController extends Controller
                 Rule::exists('users', 'id')->where(fn ($query) => $query->where('role', 'employee')),
             ],
             'publish_at' => ['nullable', 'date'],
+            'remove_attachment_ids' => ['nullable', 'array'],
+            'remove_attachment_ids.*' => [
+                'integer',
+                Rule::exists('announcement_attachments', 'id')->where(fn ($query) => $query->where('announcement_id', $announcement->id)),
+            ],
+            'attachments' => ['nullable', 'array', 'max:5'],
+            'attachments.*' => ['file', 'max:10240', 'mimes:pdf,doc,docx,png,jpg,jpeg,webp,txt,csv'],
+            'picture_adverts' => ['nullable', 'array', 'max:8'],
+            'picture_adverts.*' => ['image', 'max:10240', 'mimes:png,jpg,jpeg,webp,gif'],
         ]);
 
         $targetId = null;
@@ -225,6 +234,42 @@ class AnnouncementController extends Controller
             'target_type' => $validated['target_type'],
             'target_id' => in_array($validated['target_type'], ['team', 'user'], true) ? $targetId : null,
         ]);
+
+        foreach ($validated['remove_attachment_ids'] ?? [] as $attachmentId) {
+            $attachment = AnnouncementAttachment::query()
+                ->where('announcement_id', $announcement->id)
+                ->whereKey($attachmentId)
+                ->first();
+
+            if ($attachment) {
+                Storage::disk('public')->delete($attachment->file_path);
+                $attachment->delete();
+            }
+        }
+
+        foreach ($request->file('attachments', []) as $attachment) {
+            $path = $attachment->store('announcement-attachments', 'public');
+
+            AnnouncementAttachment::create([
+                'announcement_id' => $announcement->id,
+                'file_name' => $attachment->getClientOriginalName(),
+                'file_path' => $path,
+                'mime_type' => $attachment->getClientMimeType(),
+                'size_bytes' => $attachment->getSize(),
+            ]);
+        }
+
+        foreach ($request->file('picture_adverts', []) as $pictureAdvert) {
+            $path = $pictureAdvert->store('announcement-attachments', 'public');
+
+            AnnouncementAttachment::create([
+                'announcement_id' => $announcement->id,
+                'file_name' => $pictureAdvert->getClientOriginalName(),
+                'file_path' => $path,
+                'mime_type' => $pictureAdvert->getClientMimeType(),
+                'size_bytes' => $pictureAdvert->getSize(),
+            ]);
+        }
 
         ActivityLogger::log(auth()->id(), 'announcement.updated', $announcement, [
             'target_type' => $validated['target_type'],

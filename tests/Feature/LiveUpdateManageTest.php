@@ -3,9 +3,12 @@
 namespace Tests\Feature;
 
 use App\Models\Announcement;
+use App\Models\AnnouncementAttachment;
 use App\Models\AnnouncementTarget;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class LiveUpdateManageTest extends TestCase
@@ -43,6 +46,55 @@ class LiveUpdateManageTest extends TestCase
             'title' => 'Updated title',
             'body' => 'Updated body',
         ]);
+    }
+
+    public function test_author_can_remove_existing_files_and_add_images_when_editing_live_update(): void
+    {
+        Storage::fake('public');
+
+        $employer = User::factory()->create([
+            'role' => 'employer',
+        ]);
+
+        $announcement = Announcement::create([
+            'author_id' => $employer->id,
+            'title' => 'With files',
+            'body' => 'Body',
+        ]);
+
+        AnnouncementTarget::create([
+            'announcement_id' => $announcement->id,
+            'target_type' => 'all',
+            'target_id' => null,
+        ]);
+
+        $existing = AnnouncementAttachment::create([
+            'announcement_id' => $announcement->id,
+            'file_name' => 'old.png',
+            'file_path' => 'announcement-attachments/old.png',
+            'mime_type' => 'image/png',
+            'size_bytes' => 8,
+        ]);
+        Storage::disk('public')->put($existing->file_path, 'fake-png');
+
+        $newImage = UploadedFile::fake()->image('new-banner.jpg', 400, 300);
+
+        $response = $this->actingAs($employer)->put(route('announcements.update', $announcement), [
+            'title' => 'With files',
+            'body' => 'Body updated',
+            'target_type' => 'all',
+            'remove_attachment_ids' => [$existing->id],
+            'picture_adverts' => [$newImage],
+        ]);
+
+        $response->assertRedirect(route('announcements.index'));
+
+        $this->assertDatabaseMissing('announcement_attachments', ['id' => $existing->id]);
+        Storage::disk('public')->assertMissing($existing->file_path);
+
+        $this->assertDatabaseCount('announcement_attachments', 1);
+        $newPath = AnnouncementAttachment::query()->value('file_path');
+        Storage::disk('public')->assertExists($newPath);
     }
 
     public function test_author_can_delete_live_update(): void

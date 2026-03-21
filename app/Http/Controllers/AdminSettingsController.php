@@ -8,21 +8,27 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 class AdminSettingsController extends Controller
 {
     public function edit(): View
     {
+        $smtp = AppSetting::smtpConfig();
+
         return view('admin.settings.edit', [
-            'smtp' => AppSetting::smtpConfig(),
+            'smtp' => $smtp,
+            'smtpPasswordMissing' => filled($smtp['host']) && blank($smtp['password']),
             'emailAlerts' => AppSetting::emailAlertConfig(),
+            'siteLogoUrl' => AppSetting::siteLogoUrl(),
         ]);
     }
 
     public function update(Request $request): RedirectResponse
     {
         $validated = $request->validate([
+            'site_logo' => ['nullable', 'file', 'max:2048', 'mimes:png,jpg,jpeg,webp,svg'],
             'smtp_host' => ['required', 'string', 'max:255'],
             'smtp_port' => ['required', 'integer', 'min:1', 'max:65535'],
             'smtp_encryption' => ['nullable', 'in:tls,ssl,none'],
@@ -40,6 +46,15 @@ class AdminSettingsController extends Controller
             'email_alert_live_update_body' => ['nullable', 'string', 'max:2000'],
             'email_alert_live_update_action' => ['nullable', 'string', 'max:255'],
         ]);
+
+        if ($request->hasFile('site_logo')) {
+            $this->deleteStoredSiteLogo();
+            $path = $request->file('site_logo')->store('site-logos', 'public');
+            AppSetting::setValue('site_logo_path', $path);
+        } elseif ($request->boolean('remove_site_logo')) {
+            $this->deleteStoredSiteLogo();
+            AppSetting::setValue('site_logo_path', '');
+        }
 
         $smtpHost = strtolower(trim($validated['smtp_host']));
         $smtpUsername = isset($validated['smtp_username']) ? trim($validated['smtp_username']) : '';
@@ -70,7 +85,15 @@ class AdminSettingsController extends Controller
             AppSetting::setValue($inputKey, $value === '' ? $default : $value);
         }
 
-        return back()->with('success', 'SMTP settings updated successfully.');
+        return back()->with('success', 'Settings saved successfully.');
+    }
+
+    private function deleteStoredSiteLogo(): void
+    {
+        $path = AppSetting::siteLogoPath();
+        if ($path) {
+            Storage::disk('public')->delete($path);
+        }
     }
 
     public function sendTestEmail(Request $request): RedirectResponse
@@ -79,17 +102,27 @@ class AdminSettingsController extends Controller
             'test_email' => ['required', 'email', 'max:255'],
         ]);
 
+        $smtp = AppSetting::smtpConfig();
+
+        if (filled($smtp['host']) && blank($smtp['password'])) {
+            return back()->withErrors([
+                'test_email' => 'No SMTP password is available (field left blank or password could not be decrypted with this APP_KEY). Enter the SMTP password, click Save Settings, then send the test again.',
+            ])->withInput();
+        }
+
         try {
             Mail::to($validated['test_email'])->send(new SmtpTestMail((string) config('app.name')));
         } catch (\Throwable $exception) {
             $message = 'Failed to send test email: '.$exception->getMessage();
-            $smtpHost = (string) AppSetting::getValue('smtp_host', '');
+            $smtpHost = strtolower((string) AppSetting::getValue('smtp_host', ''));
 
             if (str_contains($message, '535')) {
                 if (str_contains($smtpHost, 'gmail')) {
-                    $message = 'SMTP authentication failed (535). For Gmail, use smtp.gmail.com, port 587, TLS, and a 16-character App Password from your Google account (not your normal Gmail password). Also ensure 2-Step Verification is enabled.';
+                    $message = 'SMTP authentication failed (535). For Gmail, use smtp.gmail.com, port 587, TLS, your full Gmail address as the username, and an App Password (Google Account → Security → 2-Step Verification → App passwords)—not your normal Gmail password.';
+                } elseif (str_contains($smtpHost, 'office365') || str_contains($smtpHost, 'outlook')) {
+                    $message = 'SMTP authentication failed (535). For Microsoft 365, try smtp.office365.com, port 587, TLS, username = your full email, and the account password (or an app password if required). Your organization may disable SMTP AUTH or basic auth—in that case this mailbox cannot log in via SMTP until an admin enables it.';
                 } else {
-                    $message = 'SMTP authentication failed (535). Check SMTP username/password, host, port, encryption, and whether your provider allows SMTP AUTH for this mailbox.';
+                    $message = 'SMTP authentication failed (535). Confirm username (often the full email), password, host, port, and encryption match your provider. Re-enter the SMTP password and Save Settings if you recently changed APP_KEY or imported the database.';
                 }
             }
 
