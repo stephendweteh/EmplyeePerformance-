@@ -61,10 +61,10 @@
 
                         <div class="rounded-xl border border-slate-200 bg-slate-50/80 p-4 space-y-3">
                             <h4 class="text-md font-semibold text-slate-800">Site logo</h4>
-                            <p class="text-sm text-slate-500">Shown in the navigation bar and on login/register pages. PNG, JPG, WEBP, or SVG — max 2MB. Leave upload empty to keep the current logo.</p>
+                            <p class="text-sm text-slate-500">Shown in the navigation bar and on login/register pages (up to 300px). PNG, JPG, WEBP, or SVG — max 2MB. Leave upload empty to keep the current logo.</p>
                             @if ($siteLogoUrl)
                                 <div class="flex flex-wrap items-center gap-4">
-                                    <img src="{{ $siteLogoUrl }}" alt="Current logo" class="max-h-[180px] max-w-[180px] object-contain rounded border border-slate-200 bg-white p-1">
+                                    <img src="{{ $siteLogoUrl }}" alt="Current logo" class="max-h-[300px] max-w-[300px] object-contain">
                                     <label class="inline-flex items-center gap-2 text-sm text-rose-700 cursor-pointer">
                                         <input type="checkbox" name="remove_site_logo" value="1" class="rounded border-slate-300 text-rose-600 focus:ring-rose-500">
                                         <span>Remove custom logo (use default)</span>

@@ -3,7 +3,7 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
             <div class="flex">
-                <!-- Logo: compact in nav; full default is 180px (see application-logo) -->
+                <!-- Logo: compact in nav; login/guest uses 300px (see application-logo) -->
                 <div class="shrink-0 flex items-center">
                     <a href="{{ route('dashboard') }}">
                         <x-application-logo compact />
